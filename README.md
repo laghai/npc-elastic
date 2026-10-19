@@ -46,6 +46,10 @@ python compare_to_comsol.py npc_check/runs/diamond_mech_v1/data runs/diamond_mec
   0.1 %). We measured median 0.01 %, max 0.03 % (table below).
 - `--workers N` solves N k-points at once. Each worker needs about 5 GB of memory at this mesh, so
   use about (memory in GB) / 6: 2 on a 16 GB laptop, 4 on 32 GB.
+- How long: we timed this exact sequence on a clean 8-core Linux machine (32 GB) at `--workers 2`:
+  install 18 s, the run 57 min (54 solves, about 2 min 15 s each, 5.0 GB per worker), plot and
+  compare under 5 s. Our 6-core Intel Mac was about 1.7× slower per solve, so allow up to two
+  hours on a laptop, or run the P2 preview below first.
 
 **Parameters.** All from your repo (`CLAUDE.md`, `runs/diamond_mech_v1/sweep.py`): hex lattice
 a = 300 nm, t = 140 nm, 3-arm snowflake d = 104 nm, w = 107 nm, fillet 16 nm; isotropic E = 1050 GPa,
@@ -64,7 +68,8 @@ python -m npc_elastic diamond_mech_v1.json npc_diamond/runs/diamond_mech_v1/data
 ```
 
 **A quick look first.** `diamond_mech_v1_repro_rho2329_p2.json` is the same run with quadratic
-elements (P2): about 4× faster and 5× less memory per worker, and within 0.2 % of the P3 answer.
+elements (P2): about 6× faster (10 min instead of 57 on the machine above), 5× less memory per
+worker (1.0 GB instead of 5.0 GB), and within 0.3 % of the P3 answer (median 0.08 %).
 
 **Your own cell.** Copy a spec file and edit it: the fields are in
 [`schema/elastic-spec.v0.schema.json`](schema/elastic-spec.v0.schema.json). Lengths are nm,
