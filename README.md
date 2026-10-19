@@ -8,7 +8,14 @@ shift. NGSolve does the finite elements, SciPy ARPACK the eigensolve.
 ## Install (one command)
 
 Needs Python 3.12 or newer, on macOS (Intel or Apple Silicon) or Linux x86_64. NGSolve and Netgen
-come from pip as wheels with this command, so there is nothing else to install.
+come from pip as wheels with this command. On macOS there is nothing else to install. On Linux, the
+OpenBLAS that NGSolve bundles needs one system library, `libquadmath` (without it `import ngsolve`
+fails with `libquadmath.so.0: cannot open shared object file`). Most desktops with gcc already have it:
+
+```
+sudo apt-get install libquadmath0      # Debian, Ubuntu
+sudo dnf install libquadmath           # Fedora, RHEL
+```
 
 ```
 python3 -m venv npc-env && source npc-env/bin/activate
