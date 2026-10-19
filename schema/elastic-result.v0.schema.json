@@ -1,0 +1,878 @@
+{
+  "$defs": {
+    "Anisotropic": {
+      "additionalProperties": false,
+      "properties": {
+        "C": {
+          "description": "6x6 Voigt stiffness, Pa, order xx yy zz yz xz xy (engineering shear)",
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "C",
+          "type": "array"
+        },
+        "model": {
+          "const": "anisotropic",
+          "title": "Model",
+          "type": "string"
+        },
+        "orientation": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "3x3 rotation, as in Cubic",
+          "title": "Orientation"
+        },
+        "rho": {
+          "description": "kg/m^3",
+          "exclusiveMinimum": 0,
+          "title": "Rho",
+          "type": "number"
+        }
+      },
+      "required": [
+        "model",
+        "C",
+        "rho"
+      ],
+      "title": "Anisotropic",
+      "type": "object"
+    },
+    "Circle": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "circle",
+          "title": "Family",
+          "type": "string"
+        },
+        "r": {
+          "description": "radius, nm",
+          "exclusiveMinimum": 0,
+          "title": "R",
+          "type": "number"
+        }
+      },
+      "required": [
+        "family",
+        "r"
+      ],
+      "title": "Circle",
+      "type": "object"
+    },
+    "Cross": {
+      "additionalProperties": false,
+      "description": "Two orthogonal bars of length h and width w, centred (Safavi-Naeini & Painter 2010).",
+      "properties": {
+        "family": {
+          "const": "cross",
+          "title": "Family",
+          "type": "string"
+        },
+        "fillet": {
+          "default": 0.0,
+          "description": "fillet radius, nm",
+          "minimum": 0,
+          "title": "Fillet",
+          "type": "number"
+        },
+        "h": {
+          "description": "bar length tip to tip, nm",
+          "exclusiveMinimum": 0,
+          "title": "H",
+          "type": "number"
+        },
+        "w": {
+          "description": "bar width, nm",
+          "exclusiveMinimum": 0,
+          "title": "W",
+          "type": "number"
+        }
+      },
+      "required": [
+        "family",
+        "h",
+        "w"
+      ],
+      "title": "Cross",
+      "type": "object"
+    },
+    "Cubic": {
+      "additionalProperties": false,
+      "description": "Cubic crystal, e.g. diamond C11/C12/C44 = 1075/149/567 GPa.",
+      "properties": {
+        "C11": {
+          "description": "Pa",
+          "exclusiveMinimum": 0,
+          "title": "C11",
+          "type": "number"
+        },
+        "C12": {
+          "description": "Pa",
+          "title": "C12",
+          "type": "number"
+        },
+        "C44": {
+          "description": "Pa",
+          "exclusiveMinimum": 0,
+          "title": "C44",
+          "type": "number"
+        },
+        "model": {
+          "const": "cubic",
+          "title": "Model",
+          "type": "string"
+        },
+        "orientation": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "3x3 rotation R, crystal axes -> lab axes (columns = crystal axes in lab)",
+          "title": "Orientation"
+        },
+        "rho": {
+          "description": "kg/m^3",
+          "exclusiveMinimum": 0,
+          "title": "Rho",
+          "type": "number"
+        }
+      },
+      "required": [
+        "model",
+        "C11",
+        "C12",
+        "C44",
+        "rho"
+      ],
+      "title": "Cubic",
+      "type": "object"
+    },
+    "ElasticSpec": {
+      "additionalProperties": false,
+      "description": "One unit cell, one material, a k-path, and the runs to make (sym/antisym on the half slab\nwith a roller/antiroller on z=0, as her COMSOL does, or the full thickness).",
+      "properties": {
+        "geometry": {
+          "$ref": "#/$defs/Geometry"
+        },
+        "kpath": {
+          "$ref": "#/$defs/KPath"
+        },
+        "material": {
+          "discriminator": {
+            "mapping": {
+              "anisotropic": "#/$defs/Anisotropic",
+              "cubic": "#/$defs/Cubic",
+              "isotropic": "#/$defs/Isotropic"
+            },
+            "propertyName": "model"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Isotropic"
+            },
+            {
+              "$ref": "#/$defs/Cubic"
+            },
+            {
+              "$ref": "#/$defs/Anisotropic"
+            }
+          ],
+          "title": "Material"
+        },
+        "mesh": {
+          "$ref": "#/$defs/Mesh",
+          "default": {
+            "hmax": null,
+            "hmax_over_t": 7.5,
+            "order": 2,
+            "refine": 0
+          }
+        },
+        "outputs": {
+          "$ref": "#/$defs/Outputs",
+          "default": {
+            "csv_prefix": "Python_diamond_Gamma",
+            "fields": false,
+            "parity": true
+          }
+        },
+        "schema": {
+          "const": "npc.elastic.spec/0",
+          "default": "npc.elastic.spec/0",
+          "title": "Schema",
+          "type": "string"
+        },
+        "solver": {
+          "$ref": "#/$defs/Solver",
+          "default": {
+            "n_modes": 20,
+            "shift_hz": 10000000000.0
+          }
+        },
+        "symmetries": {
+          "default": [
+            "sym",
+            "antisym"
+          ],
+          "items": {
+            "enum": [
+              "sym",
+              "antisym",
+              "full"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Symmetries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "geometry",
+        "material",
+        "kpath"
+      ],
+      "title": "ElasticSpec",
+      "type": "object"
+    },
+    "Geometry": {
+      "additionalProperties": false,
+      "properties": {
+        "hole": {
+          "discriminator": {
+            "mapping": {
+              "circle": "#/$defs/Circle",
+              "cross": "#/$defs/Cross",
+              "none": "#/$defs/NoHole",
+              "polygon": "#/$defs/PolygonHole",
+              "snowflake": "#/$defs/Snowflake"
+            },
+            "propertyName": "family"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Snowflake"
+            },
+            {
+              "$ref": "#/$defs/Circle"
+            },
+            {
+              "$ref": "#/$defs/Cross"
+            },
+            {
+              "$ref": "#/$defs/PolygonHole"
+            },
+            {
+              "$ref": "#/$defs/NoHole"
+            }
+          ],
+          "title": "Hole"
+        },
+        "hole_center": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "hole centre from the cell origin corner, nm. Default: the cell centroid. Physics does not depend on it; the hole must lie inside the cell.",
+          "title": "Hole Center"
+        },
+        "lattice": {
+          "$ref": "#/$defs/Lattice"
+        },
+        "t": {
+          "description": "slab thickness, nm",
+          "exclusiveMinimum": 0,
+          "title": "T",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lattice",
+        "t",
+        "hole"
+      ],
+      "title": "Geometry",
+      "type": "object"
+    },
+    "Isotropic": {
+      "additionalProperties": false,
+      "properties": {
+        "E": {
+          "description": "Young's modulus, Pa",
+          "exclusiveMinimum": 0,
+          "title": "E",
+          "type": "number"
+        },
+        "model": {
+          "const": "isotropic",
+          "title": "Model",
+          "type": "string"
+        },
+        "nu": {
+          "description": "Poisson's ratio",
+          "exclusiveMaximum": 0.5,
+          "exclusiveMinimum": -1,
+          "title": "Nu",
+          "type": "number"
+        },
+        "rho": {
+          "description": "density, kg/m^3",
+          "exclusiveMinimum": 0,
+          "title": "Rho",
+          "type": "number"
+        }
+      },
+      "required": [
+        "model",
+        "E",
+        "nu",
+        "rho"
+      ],
+      "title": "Isotropic",
+      "type": "object"
+    },
+    "KPath": {
+      "additionalProperties": false,
+      "description": "Named path through high-symmetry points (hex: G, M, K; square: G, X, M), n_per_segment steps\neach, repeated points dropped (her sweep.py: G-M-K-G, 9 steps -> 27 points), or a list.",
+      "properties": {
+        "dedupe": {
+          "default": true,
+          "title": "Dedupe",
+          "type": "boolean"
+        },
+        "k": {
+          "anyOf": [
+            {
+              "items": {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "explicit (kx, ky), rad/m",
+          "title": "K"
+        },
+        "n_per_segment": {
+          "default": 9,
+          "minimum": 1,
+          "title": "N Per Segment",
+          "type": "integer"
+        },
+        "points": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "examples": [
+            [
+              "G",
+              "M",
+              "K",
+              "G"
+            ]
+          ],
+          "title": "Points"
+        }
+      },
+      "title": "KPath",
+      "type": "object"
+    },
+    "KResult": {
+      "additionalProperties": false,
+      "properties": {
+        "complete": {
+          "default": true,
+          "description": "the returned set is provably the n_modes nearest the shift",
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "energy_fraction": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "strain energy in material / total, per mode",
+          "title": "Energy Fraction"
+        },
+        "freqs_hz": {
+          "items": {
+            "type": "number"
+          },
+          "title": "Freqs Hz",
+          "type": "array"
+        },
+        "kx": {
+          "title": "Kx",
+          "type": "number"
+        },
+        "ky": {
+          "title": "Ky",
+          "type": "number"
+        },
+        "parity_x": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "mirror x->-x through the hole centre",
+          "title": "Parity X"
+        },
+        "parity_y": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "mirror y->-y through the hole centre",
+          "title": "Parity Y"
+        },
+        "parity_z": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "<u, sigma_z u>/<u,u> per mode, +1 symmetric (in-plane), -1 antisymmetric",
+          "title": "Parity Z"
+        }
+      },
+      "required": [
+        "kx",
+        "ky",
+        "freqs_hz"
+      ],
+      "title": "KResult",
+      "type": "object"
+    },
+    "Lattice": {
+      "additionalProperties": false,
+      "description": "hex: a1=(a,0), a2=(-a/2, a*sqrt(3)/2), her unit_cell_3.mph rhombus. square: a2=(0,a).",
+      "properties": {
+        "a": {
+          "description": "lattice constant, nm",
+          "exclusiveMinimum": 0,
+          "title": "A",
+          "type": "number"
+        },
+        "type": {
+          "enum": [
+            "hex",
+            "square"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "a"
+      ],
+      "title": "Lattice",
+      "type": "object"
+    },
+    "Mesh": {
+      "additionalProperties": false,
+      "properties": {
+        "hmax": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "max element size, nm",
+          "title": "Hmax"
+        },
+        "hmax_over_t": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 7.5,
+          "description": "hmax = t / this (her COMSOL tets: t/7.5); used if hmax unset",
+          "title": "Hmax Over T"
+        },
+        "order": {
+          "default": 2,
+          "description": "Lagrange element order (COMSOL default: 2)",
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "refine": {
+          "default": 0,
+          "description": "uniform refinements after meshing (each splits a tet into 8)",
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Refine",
+          "type": "integer"
+        }
+      },
+      "title": "Mesh",
+      "type": "object"
+    },
+    "MeshInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "hmax_nm": {
+          "title": "Hmax Nm",
+          "type": "number"
+        },
+        "n_elements": {
+          "title": "N Elements",
+          "type": "integer"
+        },
+        "n_vertices": {
+          "title": "N Vertices",
+          "type": "integer"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "refine": {
+          "default": 0,
+          "title": "Refine",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "hmax_nm",
+        "order",
+        "n_elements",
+        "n_vertices"
+      ],
+      "title": "MeshInfo",
+      "type": "object"
+    },
+    "NoHole": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "none",
+          "title": "Family",
+          "type": "string"
+        }
+      },
+      "required": [
+        "family"
+      ],
+      "title": "NoHole",
+      "type": "object"
+    },
+    "Outputs": {
+      "additionalProperties": false,
+      "properties": {
+        "csv_prefix": {
+          "default": "Python_diamond_Gamma",
+          "description": "her CSV name: <prefix>_<sym>.csv",
+          "title": "Csv Prefix",
+          "type": "string"
+        },
+        "fields": {
+          "default": false,
+          "description": "write displacement fields (npz) per k and mode",
+          "title": "Fields",
+          "type": "boolean"
+        },
+        "parity": {
+          "default": true,
+          "title": "Parity",
+          "type": "boolean"
+        }
+      },
+      "title": "Outputs",
+      "type": "object"
+    },
+    "PolygonHole": {
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "polygon",
+          "title": "Family",
+          "type": "string"
+        },
+        "fillet": {
+          "default": 0.0,
+          "description": "fillet radius applied to every corner, nm",
+          "minimum": 0,
+          "title": "Fillet",
+          "type": "number"
+        },
+        "vertices": {
+          "description": "hole outline relative to the hole centre, nm, CCW",
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "minItems": 3,
+          "title": "Vertices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "family",
+        "vertices"
+      ],
+      "title": "PolygonHole",
+      "type": "object"
+    },
+    "RunResult": {
+      "additionalProperties": false,
+      "properties": {
+        "k": {
+          "items": {
+            "$ref": "#/$defs/KResult"
+          },
+          "title": "K",
+          "type": "array"
+        },
+        "ndof": {
+          "title": "Ndof",
+          "type": "integer"
+        },
+        "seconds": {
+          "title": "Seconds",
+          "type": "number"
+        },
+        "symmetry": {
+          "enum": [
+            "sym",
+            "antisym",
+            "full"
+          ],
+          "title": "Symmetry",
+          "type": "string"
+        }
+      },
+      "required": [
+        "symmetry",
+        "k",
+        "ndof",
+        "seconds"
+      ],
+      "title": "RunResult",
+      "type": "object"
+    },
+    "Snowflake": {
+      "additionalProperties": false,
+      "description": "Three arms of length d (from the hole centre) and width w at 90/210/330 deg, every corner\n(convex and concave) rounded with radius fillet. Her scripts/schematic.py hole_poly.",
+      "properties": {
+        "d": {
+          "description": "arm length from the hole centre, nm",
+          "exclusiveMinimum": 0,
+          "title": "D",
+          "type": "number"
+        },
+        "family": {
+          "const": "snowflake",
+          "title": "Family",
+          "type": "string"
+        },
+        "fillet": {
+          "default": 0.0,
+          "description": "fillet radius f_r, nm",
+          "minimum": 0,
+          "title": "Fillet",
+          "type": "number"
+        },
+        "w": {
+          "description": "arm width, nm",
+          "exclusiveMinimum": 0,
+          "title": "W",
+          "type": "number"
+        }
+      },
+      "required": [
+        "family",
+        "d",
+        "w"
+      ],
+      "title": "Snowflake",
+      "type": "object"
+    },
+    "Solver": {
+      "additionalProperties": false,
+      "properties": {
+        "n_modes": {
+          "default": 20,
+          "minimum": 1,
+          "title": "N Modes",
+          "type": "integer"
+        },
+        "shift_hz": {
+          "default": 10000000000.0,
+          "description": "return the n_modes eigenfrequencies nearest this",
+          "minimum": 0,
+          "title": "Shift Hz",
+          "type": "number"
+        }
+      },
+      "title": "Solver",
+      "type": "object"
+    }
+  },
+  "$id": "https://github.com/laghai/nanophotonics-cloud/elastic/result/0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "engine": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "package versions: npc_elastic, ngsolve, scipy",
+      "title": "Engine",
+      "type": "object"
+    },
+    "mesh": {
+      "$ref": "#/$defs/MeshInfo"
+    },
+    "runs": {
+      "items": {
+        "$ref": "#/$defs/RunResult"
+      },
+      "title": "Runs",
+      "type": "array"
+    },
+    "schema": {
+      "const": "npc.elastic.result/0",
+      "default": "npc.elastic.result/0",
+      "title": "Schema",
+      "type": "string"
+    },
+    "spec": {
+      "$ref": "#/$defs/ElasticSpec"
+    },
+    "status": {
+      "default": "screening",
+      "description": "qualified only with a mesh-convergence plateau (docs/reporting.md)",
+      "enum": [
+        "screening",
+        "qualified"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "spec",
+    "runs",
+    "mesh",
+    "engine"
+  ],
+  "title": "ElasticResult",
+  "type": "object"
+}

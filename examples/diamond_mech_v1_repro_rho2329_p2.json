@@ -1,0 +1,14 @@
+{
+  "schema": "npc.elastic.spec/0",
+  "geometry": {
+    "lattice": {"type": "hex", "a": 300},
+    "t": 140,
+    "hole": {"family": "snowflake", "d": 104, "w": 107, "fillet": 16}
+  },
+  "material": {"model": "isotropic", "E": 1050e9, "nu": 0.07, "rho": 2329},
+  "symmetries": ["sym", "antisym"],
+  "kpath": {"points": ["G", "M", "K", "G"], "n_per_segment": 9},
+  "mesh": {"hmax_over_t": 7.5, "order": 2},
+  "solver": {"n_modes": 20, "shift_hz": 10e9},
+  "outputs": {"parity": true, "fields": false, "csv_prefix": "Python_diamond_Gamma"}
+}

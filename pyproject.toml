@@ -1,0 +1,36 @@
+# Standalone package for the laptop: `pip install` this directory (or the public mirror
+# github.com/laghai/npc-elastic) gives `python -m npc_elastic SPEC.json OUT/` with no cloud access.
+# The repo root's pyproject.toml still packages the same npc_elastic inside nanophotonics-cloud.
+# ngsolve is pinned exactly: Netgen's mesh, and so every frequency, is the one the cloud image
+# (elastic_cloud/cloud/Dockerfile) and the engine id assume. NGSolve ships wheels for macOS
+# (universal2) and Linux x86_64 (glibc >= 2.28), Python 3.10-3.14 (we test 3.12, 3.13); they bring netgen-mesher.
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "npc-elastic"
+dynamic = ["version"]
+description = "Bloch-periodic elastic eigenmodes of a 3D phononic-crystal unit cell (open COMSOL Solid Mechanics eigenfrequency)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ngsolve==6.2.2608",
+    "scipy>=1.11",
+    "numpy>=1.26",
+    "pydantic>=2.7,<3",
+    "shapely>=2.0",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.8"]
+test = ["pytest>=8"]
+
+[tool.hatch.version]
+path = "npc_elastic/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["npc_elastic"]
+
+[tool.hatch.build.targets.sdist]
+include = ["npc_elastic", "examples", "schema", "tests", "README.md", "pyproject.toml"]
